@@ -1,4 +1,4 @@
-# kit-etudiant 2.1
+# kit-etudiant 2.3
 
 Ton environnement de travail **C et Bash** sur Linux Mint, installé **sans droits administrateur**.
 
@@ -87,6 +87,7 @@ bash kit-etudiant.sh --maison ~/kit-maison.tar.gz
 | fzf, zoxide | Ctrl-R, Ctrl-T, Alt-C, `z dossier` |
 | Profil « Maison » | GNOME Terminal aux couleurs Breeze de Konsole, police MesloLGS NF 15, marge de 5 px |
 | Caps Lock → Échap | confort dans Neovim (Shift + Caps garde les majuscules) |
+| CopyQ | **Super+V** : historique de tout ce que tu copies (terminal, Neovim, navigateur) |
 
 ### Neovim + LazyVim
 
@@ -96,7 +97,8 @@ bash kit-etudiant.sh --maison ~/kit-maison.tar.gz
 | codelldb + nvim-dap | débogueur graphique |
 | bash-language-server + shellcheck + shfmt | erreurs, complétion et formatage des scripts |
 | treesitter | coloration précise du C, du Bash… |
-| Pages man dans Neovim | `Espace s M` ou `man 3 strdup` : explication complète d'une fonction |
+| Pages man dans Neovim | `Espace s M` : explication complète d'une fonction |
+| yanky (historique des copies) | Espace p : choisir dans tout ce que tu as copié ; `[y` / `]y` juste après `p` |
 
 ### Outils C et Bash
 
@@ -111,7 +113,7 @@ bash kit-etudiant.sh --maison ~/kit-maison.tar.gz
 
 ### Ligne de commande
 
-ripgrep, fd, bat, eza, delta, lazygit, jq, yazi, gh, glow, watchexec, hyperfine, duf, sd, btop, gdu, direnv, chezmoi, croc, rclone, tldr, trash-cli, tmux.
+ripgrep, fd, bat, eza, delta, lazygit, jq, yazi, gh, glow, watchexec, hyperfine, duf, sd, btop, gdu, direnv, chezmoi, croc, rclone, tldr, trash-cli, thefuck, tmux, xclip. `gedit` ouvre xed, l'éditeur de Mint, si gedit n'est pas installé.
 
 ---
 
@@ -173,6 +175,7 @@ Ne pas mettre à jour juste avant un examen.
 | Lettres très espacées ou carrés à la place des icônes | profil « Maison » → police **MesloLGS NF** |
 | Une ligne ✘ dans le bilan | lire le journal indiqué, puis relancer le script |
 | Pas de serveur Bash dans Neovim | Node absent : vérifier l'étape conda dans le bilan |
+| CopyQ refusé (« le système n'a pas : libOpenGL.so.0 » ou glibc trop ancienne) | `flatpak install --user flathub com.github.hluk.copyq` si flatpak est présent |
 | Quota plein | `gdu ~`, puis relancer avec `--sans-conda` si besoin |
 | Revenir à l'état d'origine | `bash kit-etudiant.sh --desinstaller --tout` |
 
@@ -192,5 +195,7 @@ Testé le 5 octobre 2026 sur Ubuntu 24.04 avec un **utilisateur sans aucun droit
 | Profil GNOME Terminal | toutes les clés validées par le schéma de GNOME Terminal |
 | Désinstallation d'une version 1 | 1,7 Go → 188 Ko, `.bashrc` et `.profile` identiques à l'original |
 | Désinstallation de la version 2 | 1,7 Go → 13 Mo, fichiers perso et config Neovim conservés |
+
+CopyQ 16 (figé : la 17 exige une glibc trop récente pour Mint) démarre quand `libOpenGL.so.0` est présente, comme sur un bureau Mint 22.
 
 **Pas encore testé sur un vrai poste** : micromamba, et l'affichage réel du profil « Maison » dans GNOME Terminal.

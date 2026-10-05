@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2088  # les « ~/ » entre guillemets sont des libellés affichés
 # =============================================================================
-#  kit-etudiant.sh 2.1 — Ton environnement « maison » sur Linux Mint, SANS ROOT
+#  kit-etudiant.sh 2.3 — Ton environnement « maison » sur Linux Mint, SANS ROOT
 #     zsh + oh-my-zsh + powerlevel10k   ·   Neovim + LazyVim (clangd, débogueur)
 #     GNOME Terminal aux couleurs de Konsole + police MesloLGS NF
 #     Outils C / Bash : gdb, valgrind, shellcheck, cppcheck, rg, fd, lazygit…
@@ -26,7 +26,7 @@ sudo()   { echo "INTERDIT : kit-etudiant n'utilise jamais sudo" >&2; return 97; 
 su()     { echo "INTERDIT : kit-etudiant n'utilise jamais su" >&2; return 97; }
 pkexec() { echo "INTERDIT : kit-etudiant n'utilise jamais pkexec" >&2; return 97; }
 
-KIT_VERSION="2.1 — 2026-10-06"
+KIT_VERSION="2.3 — 2026-10-06"
 PREFIX="$HOME/.local"
 BIN="$PREFIX/bin"
 OPT="$PREFIX/opt"
@@ -49,7 +49,7 @@ declare -a OKS=() KOS=() MAIN=()
 if [ -t 1 ]; then V=$'\e[32m'; R=$'\e[31m'; J=$'\e[33m'; B=$'\e[1;34m'; G=$'\e[2m'; N=$'\e[0m'
 else V=""; R=""; J=""; B=""; G=""; N=""; fi
 
-ETAPES=(prepa cli zsh outils_shell outils_c python conda neovim tmux config doc terminal)
+ETAPES=(prepa cli zsh outils_shell outils_c python conda neovim tmux config doc terminal presse_papier)
 declare -A DESC=(
   [prepa]="dossiers, vérifications (noexec, glibc, place), PATH"
   [cli]="rg fd bat eza delta lazygit jq yazi gh glow watchexec hyperfine duf sd btop gdu direnv chezmoi croc rclone tldr"
@@ -57,12 +57,13 @@ declare -A DESC=(
   [outils_shell]="shellcheck, shfmt, bats-core"
   [outils_c]="gdb-dashboard"
   [python]="uv + clang-format, clang-tidy, trash-cli"
-  [conda]="micromamba + valgrind gdb cppcheck bear tmux check pkg-config node"
+  [conda]="micromamba + valgrind gdb cppcheck bear tmux check pkg-config node xclip"
   [neovim]="Neovim + LazyVim (clangd, débogueur codelldb, bash), plugins et outils Mason"
   [tmux]="tmux.conf, tpm, tmux-sensible, tmux-resurrect"
   [config]=".zshrc, repli bash, gdbinit, git + delta, modèle de projet C, kit-projet, kit-aide"
   [doc]="doc C hors ligne (cppreference, commande doc-c)"
   [terminal]="police MesloLGS NF, profil GNOME Terminal « Maison » (couleurs Konsole), Caps Lock → Échap"
+  [presse_papier]="CopyQ : historique de tout ce que tu copies (terminal, Neovim, navigateur), Super+V"
 )
 
 # ---- Affichage ---------------------------------------------------------------
@@ -147,6 +148,52 @@ installer_gh() { # installer_gh depot REGEX spec...
   installer_bin "$url" "$@" || return 1
   premier=${1##*:}; verifier "$BIN/$premier"
 }
+# Bibliothèques système manquantes pour les programmes d'une AppImage extraite
+libs_manquantes() {
+  local d=$1 lp b
+  command -v ldd >/dev/null || return 0
+  lp=$(find "$d" -name '*.so*' \( -type f -o -type l \) -printf '%h\n' 2>/dev/null | sort -u | paste -sd:)
+  for b in "$d"/usr/bin/*; do
+    [ -f "$b" ] && [ -x "$b" ] || continue
+    head -c4 "$b" | grep -q ELF || continue
+    LD_LIBRARY_PATH="$lp" ldd "$b" 2>/dev/null | awk '/not found/{print $1}'
+  done | sort -u | paste -sd' '
+}
+# AppImage -> extraite (pas besoin de FUSE), lanceur dans ~/.local/bin
+appimage() {     # appimage URL_ou_FICHIER NOM [COMMANDE]
+  local src=$1 nom=$2 cmd=${3:-$2} f
+  f="$WORK/dl/$nom.AppImage"
+  if [ -f "$src" ]; then cp "$src" "$f"; else telecharger "$src" "$f" || return 1; fi
+  chmod +x "$f"
+  rm -rf "${WORK:?}/squashfs-root" "${OPT:?}/${nom:?}"
+  (cd "$WORK" && "$f" --appimage-extract >/dev/null) || return 1
+  mv "$WORK/squashfs-root" "$OPT/$nom"
+  rm -f "$f"
+  local m; m=$(libs_manquantes "$OPT/$nom")
+  if [ -n "$m" ]; then   # inutile de garder une appli qui ne démarrera pas
+    rm -rf "${OPT:?}/${nom:?}"
+    RAISON="le système n'a pas : $m (demande au service info)"; echo "$RAISON"; return 1
+  fi
+  # lanceur (pas un lien : certains AppRun cherchent leurs fichiers à côté d'eux)
+  printf '#!/bin/sh\nexec "%s/AppRun" "$@"\n' "$OPT/$nom" >"$BIN/$cmd"; chmod +x "$BIN/$cmd"
+  noter "$OPT/$nom"; noter "$BIN/$cmd"
+}
+raccourci() {    # raccourci ID "Nom" "Commande" "Icône" "Catégories"
+  local fic="$SHR/applications/kit-$1.desktop"
+  mkdir -p "$SHR/applications"
+  cat >"$fic" <<EOF
+[Desktop Entry]
+Type=Application
+Name=$2
+Exec=$3
+Icon=$4
+Categories=$5
+Terminal=false
+EOF
+  noter "$fic"
+}
+icone_appimage() { readlink -f "$OPT/$1/.DirIcon" 2>/dev/null || echo "$1"; }
+
 # Bloc délimité dans un fichier de config (remplacé à chaque passage)
 bloc_fichier() { # bloc_fichier FICHIER CONTENU [DÉBUT_COMMENTAIRE] [FIN_COMMENTAIRE]
   local f=$1 contenu=$2 c=${3:-#} fin=${4:+ $4} tmp
@@ -369,7 +416,7 @@ etape_python() {
 }
 
 conda_env() {
-  local pk=(valgrind gdb cppcheck bear tmux check pkg-config nodejs)
+  local pk=(valgrind gdb cppcheck bear tmux check pkg-config nodejs xclip)
   if [ -d "$MAMBA_ROOT/envs/outils" ]; then
     "$MM" -r "$MAMBA_ROOT" install -y -n outils -c conda-forge --override-channels "${pk[@]}" || return 1
     [ "$MAJ" -eq 1 ] && { "$MM" -r "$MAMBA_ROOT" update -y -n outils --all || return 1; }
@@ -380,7 +427,7 @@ conda_env() {
 }
 conda_liens() {  # le système garde la priorité : on ne lie que ce qui manque
   local e="$MAMBA_ROOT/envs/outils/bin" b
-  for b in valgrind vgdb gdb gdbserver cppcheck bear tmux node npm npx checkmk; do
+  for b in valgrind vgdb gdb gdbserver cppcheck bear tmux node npm npx checkmk xclip; do
     [ -e "$e/$b" ] || continue
     if systeme_a "$b"; then echo "$b : version système conservée"; continue; fi
     ln -sfn "$e/$b" "$BIN/$b"; noter "$BIN/$b"
@@ -428,6 +475,7 @@ config_lazyvim() {
   cat >"$NVIM_CFG/lazyvim.json" <<'JSON'
 {
   "extras": [
+    "lazyvim.plugins.extras.coding.yanky",
     "lazyvim.plugins.extras.dap.core",
     "lazyvim.plugins.extras.lang.clangd"
   ],
@@ -458,12 +506,14 @@ vim.opt.relativenumber = false   -- numéros de ligne classiques
 vim.opt.scrolloff = 5
 pcall(require, "config.perso")
 LUA
+  rm -f "$NVIM_CFG/lua/config/kit_raccourcis.lua"   # ancien remappage Ctrl-C/Ctrl-V (v2.2), retiré
   [ -f "$NVIM_CFG/lua/config/perso.lua" ] || printf -- '-- Tes options Neovim (jamais écrasé par le kit)\n' >"$NVIM_CFG/lua/config/perso.lua"
   [ -f "$NVIM_CFG/lua/plugins/perso.lua" ] || printf -- '-- Tes plugins Neovim (jamais écrasé par le kit)\nreturn {}\n' >"$NVIM_CFG/lua/plugins/perso.lua"
   return 0
 }
 nvim_plugins() {
-  timeout 900 "$BIN/nvim" --headless "+Lazy! sync" +qa
+  if [ "$MAJ" -eq 1 ]; then timeout 900 "$BIN/nvim" --headless "+Lazy! sync" +qa
+  else timeout 900 "$BIN/nvim" --headless "+Lazy! install" +qa; fi
   local n; n=$(find "$HOME/.local/share/nvim/lazy" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
   echo "plugins Neovim installés : $n"
   noter "$HOME/.local/share/nvim"; noter "$HOME/.local/state/nvim"; noter "$HOME/.cache/nvim"
@@ -521,7 +571,7 @@ etape_neovim() {
   outil "Neovim" "$BIN/nvim" installer_nvim
   [ -x "$BIN/nvim" ] || { ko "LazyVim" "Neovim absent"; return; }
   faire "config LazyVim (~/.config/nvim)" config_lazyvim || return
-  outil "plugins LazyVim (premier téléchargement, quelques minutes)" "$HOME/.local/share/nvim/lazy/LazyVim" nvim_plugins
+  faire "plugins LazyVim (1re fois : quelques minutes)" nvim_plugins
   outil "outils Mason (clangd, codelldb, shellcheck, shfmt, bashls)" "$HOME/.local/share/nvim/mason/bin/clangd" nvim_mason
   if [ "$MAJ" -eq 1 ] || [ ! -e "$HOME/.local/share/nvim/site/parser/c.so" ]; then
     faire "parseurs de coloration (C, bash…)" nvim_parseurs \
@@ -603,6 +653,7 @@ alias vim=nvim vi=nvim
 (( $+commands[zoxide] ))    && alias j=z           # habitude autojump
 (( $+commands[eza] ))       && alias lt='eza --tree --level=2 --icons'
 (( $+commands[lazygit] ))   && alias lg=lazygit
+(( $+commands[gedit] )) || { (( $+commands[xed] )) && alias gedit=xed; }   # Mint : xed = gedit
 (( $+commands[trash-put] )) && alias tp=trash-put
 mkcd() { mkdir -p -- "$1" && cd -- "$1"; }
 
@@ -639,6 +690,7 @@ shopt -s histappend autocd cdspell globstar checkwinsize
 command -v zoxide >/dev/null && eval "$(zoxide init bash)"
 command -v eza >/dev/null && alias ll='eza -la --git --group-directories-first' lt='eza --tree --level=2'
 command -v lazygit >/dev/null && alias lg=lazygit
+command -v gedit >/dev/null || { command -v xed >/dev/null && alias gedit=xed; }
 command -v trash-put >/dev/null && alias tp=trash-put
 export CC=gcc
 CFLAGS_KIT="-std=c11 -D_DEFAULT_SOURCE -Wall -Wextra -Wpedantic -Wshadow -Wconversion -g"
@@ -819,6 +871,7 @@ ecrire_aide() {
 | `doc-c` | doc C hors ligne (cppreference) |
 | `lg` | lazygit |
 | `p10k configure` | refaire le style du prompt |
+| `gedit fichier` | éditeur graphique (xed sur Mint) |
 | `kit-aide` | cette page |
 
 ## Compiler du C
@@ -849,6 +902,17 @@ ecrire_aide() {
 | Ctrl-/ | terminal intégré |
 | Espace g g | lazygit |
 | Espace (attendre) | tous les raccourcis |
+
+## Copier / coller
+| Où | Comment |
+|---|---|
+| Neovim | `y` copier, `d` couper, `p` / `P` coller après / avant |
+| Neovim | Espace p : **historique des copies**, choisir et coller |
+| Neovim | juste après `p` : `[y` / `]y` remplace par la copie précédente / suivante |
+| Terminal | sélectionner à la souris = copié ; **clic molette** = coller |
+| Terminal | Ctrl-Shift-C / Ctrl-Shift-V (Ctrl-C arrête le programme) |
+| Partout | **Super+V** : historique CopyQ de tout ce que tu as copié |
+| tmux | Ctrl-b = : historique des copies faites dans tmux |
 
 ## gdb
 `dash` panneaux · `break main` · `run` · `next` · `step` · `print x` · `bt`
@@ -985,6 +1049,45 @@ etape_terminal() {
   amain "Premier lancement de nvim : laisser finir les téléchargements (1 à 2 minutes)"
   amain "Style du prompt : p10k configure (ou --p10k avec ton fichier de la maison)"
   amain "Aide-mémoire : kit-aide"
+}
+
+# ---- Presse-papier : CopyQ --------------------------------------------------
+installer_copyq() {
+  # Version figée : CopyQ 17 exige glibc 2.43 (trop récente pour Mint) ; la 16 demande glibc 2.38
+  local url=https://github.com/hluk/CopyQ/releases/download/v16.0.0/CopyQ-16.0.0-x86_64.AppImage g
+  g=$(ldd --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+$')
+  if [ "$(printf '%s\n' "2.38" "$g" | sort -V | head -1)" != "2.38" ]; then
+    RAISON="glibc $g trop ancienne (2.38 minimum) : utilise plutôt flatpak --user install flathub com.github.hluk.copyq"
+    echo "$RAISON"; return 1
+  fi
+  appimage "$url" copyq copyq || return 1
+  raccourci copyq "CopyQ (historique du presse-papier)" "$BIN/copyq" "$(icone_appimage copyq)" "Utility;"
+  mkdir -p "$HOME/.config/autostart"
+  cat >"$HOME/.config/autostart/kit-copyq.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=CopyQ (kit)
+Exec=$BIN/copyq
+X-GNOME-Autostart-Delay=6
+EOF
+  noter "$HOME/.config/autostart/kit-copyq.desktop"
+  if [ ! -f "$HOME/.config/copyq/copyq-commands.ini" ]; then   # Super+V : ouvrir l'historique
+    mkdir -p "$HOME/.config/copyq"
+    cat >"$HOME/.config/copyq/copyq-commands.ini" <<'EOF'
+[Commands]
+1\Command=copyq: toggle()
+1\GlobalShortcut=meta+v
+1\IsGlobalShortcut=true
+1\Name=Afficher l'historique
+size=1
+EOF
+    noter "$HOME/.config/copyq"
+  fi
+}
+etape_presse_papier() {
+  titre "Presse-papier : CopyQ"
+  outil "CopyQ (historique du presse-papier, Super+V)" "$OPT/copyq" installer_copyq
+  amain "CopyQ démarre à la prochaine session (ou lancer : copyq &). Super+V ouvre l'historique"
 }
 
 # =============================================================================

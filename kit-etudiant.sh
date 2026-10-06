@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2088  # les « ~/ » entre guillemets sont des libellés affichés
 # =============================================================================
-#  kit-etudiant.sh 2.3 — Ton environnement « maison » sur Linux Mint, SANS ROOT
+#  kit-etudiant.sh 2.5 — Ton environnement « maison » sur Linux Mint, SANS ROOT
 #     zsh + oh-my-zsh + powerlevel10k   ·   Neovim + LazyVim (clangd, débogueur)
 #     GNOME Terminal aux couleurs de Konsole + police MesloLGS NF
 #     Outils C / Bash : gdb, valgrind, shellcheck, cppcheck, rg, fd, lazygit…
@@ -26,7 +26,7 @@ sudo()   { echo "INTERDIT : kit-etudiant n'utilise jamais sudo" >&2; return 97; 
 su()     { echo "INTERDIT : kit-etudiant n'utilise jamais su" >&2; return 97; }
 pkexec() { echo "INTERDIT : kit-etudiant n'utilise jamais pkexec" >&2; return 97; }
 
-KIT_VERSION="2.3 — 2026-10-06"
+KIT_VERSION="2.5 — 2026-10-06"
 PREFIX="$HOME/.local"
 BIN="$PREFIX/bin"
 OPT="$PREFIX/opt"
@@ -495,9 +495,18 @@ JSON
 -- kit-etudiant : réécrit à chaque installation. Tes plugins : lua/plugins/perso.lua
 return {
   -- Bash : serveur de langage (complétion, doc) + shellcheck (erreurs) ; shfmt formate déjà
-  { "neovim/nvim-lspconfig", opts = { servers = { bashls = {} } } },
+  -- bashls seulement si on peut l'avoir (npm pour l'installer, ou déjà installé) : sinon
+  -- Mason réessaierait à chaque ouverture et afficherait une erreur rouge.
+  { "neovim/nvim-lspconfig", opts = function(_, opts)
+      opts.servers = opts.servers or {}
+      if vim.fn.executable("npm") == 1 or vim.fn.executable("bash-language-server") == 1 then
+        opts.servers.bashls = {}
+      end
+    end },
   { "mfussenegger/nvim-lint", opts = { linters_by_ft = { sh = { "shellcheck" }, bash = { "shellcheck" } } } },
   { "mason-org/mason.nvim", opts = { ${ligne_reg}ensure_installed = { "shellcheck", "shfmt", "codelldb" } } },
+  -- Ligne de commande et messages classiques de Vim, en bas de l'écran
+  { "folke/noice.nvim", opts = { cmdline = { enabled = false }, messages = { enabled = false } } },
 }
 LUA
   cat >"$NVIM_CFG/lua/config/options.lua" <<'LUA'
@@ -558,9 +567,13 @@ else
   vim.cmd("TSInstallSync " .. table.concat(langs, " "))
 end
 local dir = vim.fn.stdpath("data") .. "/site/parser/"
+local casses = 0
 for _, l in ipairs(langs) do
-  io.stdout:write(l .. " : " .. (vim.uv.fs_stat(dir .. l .. ".so") and "OK" or "ÉCHEC") .. "\n")
+  local bon = pcall(vim.treesitter.query.get, l, "highlights")
+  if not bon then casses = casses + 1 end
+  io.stdout:write(l .. " : " .. (vim.uv.fs_stat(dir .. l .. ".so") and (bon and "OK" or "RÈGLES CASSÉES") or "ÉCHEC") .. "\n")
 end
+if casses > 0 then os.exit(1) end
 LUA
   KIT_TS="c cpp bash make markdown markdown_inline lua vim vimdoc regex query diff printf" \
     timeout 900 "$BIN/nvim" --headless "+luafile $WORK/kit-ts.lua" +qa

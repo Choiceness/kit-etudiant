@@ -418,7 +418,7 @@ La désinstallation retire le profil « Maison » et remet ton terminal par déf
 | Script | Où | Rôle |
 |---|---|---|
 | `export-maison.sh` | PC maison | lecture seule : rassemble prompt, plugins, police, couleurs Konsole et config Neovim dans `~/kit-maison.tar.gz` |
-| `reparer-maison.sh` | PC maison | répare ce qui était cassé chez toi (CFLAGS, thefuck, git, outils LazyVim, Node, treesitter, ligne de commande, ménage). Chaque réparation demande ton accord ; `--voir` pour regarder sans rien changer |
+| `reparer-maison.sh` | PC maison | répare ce qui était cassé chez toi (CFLAGS, thefuck, git, outils LazyVim, Node, treesitter, ligne de commande, ménage), puis ajoute ce que la fac a en plus, seulement s'il manque : shellcheck, shfmt, bats, tldr, eza, delta, watchexec, trash-cli, Check, clang-tidy, gdb-dashboard, `kit-projet`, `kit-aide`, `doc-c`, alias `lt` `lg` `tp` `mkcd`, `git lg`. Chaque étape demande ton accord ; `--voir` pour regarder sans rien changer. Garder `kit-etudiant.sh` dans le même dossier |
 
 Si tu changes de thème ou de plugins à la maison : relancer `export-maison.sh`, puis `--maison` à la fac.
 
@@ -428,6 +428,7 @@ Si tu changes de thème ou de plugins à la maison : relancer `export-maison.sh`
 
 | Version | Changements |
 |---|---|
+| 2.5.4 | `lt dossier` réparé (eza prenait le dossier pour une option de `--icons`) |
 | 2.5 | serveur bash seulement si Node est disponible ; vérification des règles de coloration après installation |
 | 2.4 | ligne de commande et messages de Neovim en bas de l'écran (noice ne les gère plus) |
 | 2.3 | yanky (historique des copies dans Neovim), CopyQ (historique global, Super+V) |

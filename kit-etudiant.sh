@@ -26,7 +26,7 @@ sudo()   { echo "INTERDIT : kit-etudiant n'utilise jamais sudo" >&2; return 97; 
 su()     { echo "INTERDIT : kit-etudiant n'utilise jamais su" >&2; return 97; }
 pkexec() { echo "INTERDIT : kit-etudiant n'utilise jamais pkexec" >&2; return 97; }
 
-KIT_VERSION="2.5 — 2026-10-06"
+KIT_VERSION="2.5.4 — 2026-10-12"
 PREFIX="$HOME/.local"
 BIN="$PREFIX/bin"
 OPT="$PREFIX/opt"
@@ -472,6 +472,10 @@ config_lazyvim() {
     echo "config Neovim créée par kit-etudiant (lazyvim.json, lua/plugins/kit.lua et lua/config/options.lua sont réécrits ; le reste est à toi)" >"$NVIM_CFG/.kit-etudiant"
   fi
   mkdir -p "$NVIM_CFG/lua/plugins" "$NVIM_CFG/lua/config"
+  # pas de vérification des mises à jour en arrière-plan (lent sur un home réseau, et stabilité)
+  [ -f "$NVIM_CFG/lua/config/lazy.lua" ] && sed -i \
+    's/enabled = true, -- check for plugin updates periodically/enabled = false, -- kit-etudiant : pas de vérification automatique/' \
+    "$NVIM_CFG/lua/config/lazy.lua"
   cat >"$NVIM_CFG/lazyvim.json" <<'JSON'
 {
   "extras": [
@@ -489,8 +493,8 @@ JSON
   local reg=""
   [ "$MAJ" -eq 0 ] && reg=$(sed -n 's/.*mason-registry@\([^"]*\)".*/\1/p' "$NVIM_CFG/lua/plugins/kit.lua" 2>/dev/null | head -1)
   [ -n "$reg" ] || reg=$(gh_tag mason-org/mason-registry)
-  local ligne_reg=""
-  [ -n "$reg" ] && ligne_reg="registries = { \"github:mason-org/mason-registry@$reg\" }, "
+  local ligne_reg_fn="-- registre : version par défaut"
+  [ -n "$reg" ] && ligne_reg_fn="opts.registries = { \"github:mason-org/mason-registry@$reg\" }"
   cat >"$NVIM_CFG/lua/plugins/kit.lua" <<LUA
 -- kit-etudiant : réécrit à chaque installation. Tes plugins : lua/plugins/perso.lua
 return {
@@ -503,8 +507,26 @@ return {
         opts.servers.bashls = {}
       end
     end },
-  { "mfussenegger/nvim-lint", opts = { linters_by_ft = { sh = { "shellcheck" }, bash = { "shellcheck" } } } },
-  { "mason-org/mason.nvim", opts = { ${ligne_reg}ensure_installed = { "shellcheck", "shfmt", "codelldb" } } },
+  -- shellcheck une seule fois : bashls le lance déjà ; nvim-lint seulement si bashls est absent
+  { "mfussenegger/nvim-lint", opts = function(_, opts)
+      if vim.fn.executable("npm") == 0 and vim.fn.executable("bash-language-server") == 0 then
+        opts.linters_by_ft = opts.linters_by_ft or {}
+        opts.linters_by_ft.sh = { "shellcheck" }
+        opts.linters_by_ft.bash = { "shellcheck" }
+      end
+    end },
+  -- Mason : registre figé + shellcheck. Liste dédoublonnée : LazyVim installe chaque outil de la
+  -- liste sans vérifier les doublons → « Package is already installing » si un outil y est 2 fois.
+  { "mason-org/mason.nvim", opts = function(_, opts)
+      ${ligne_reg_fn}
+      opts.ensure_installed = opts.ensure_installed or {}
+      table.insert(opts.ensure_installed, "shellcheck")
+      local vus, uniques = {}, {}
+      for _, t in ipairs(opts.ensure_installed) do
+        if not vus[t] then vus[t] = true; table.insert(uniques, t) end
+      end
+      opts.ensure_installed = uniques
+    end },
   -- Ligne de commande et messages classiques de Vim, en bas de l'écran
   { "folke/noice.nvim", opts = { cmdline = { enabled = false }, messages = { enabled = false } } },
 }
@@ -513,6 +535,11 @@ LUA
 -- kit-etudiant : réécrit à chaque installation. Tes options : lua/config/perso.lua
 vim.opt.relativenumber = false   -- numéros de ligne classiques
 vim.opt.scrolloff = 5
+-- Fichiers d'échange (.swp) sur le disque local au lieu du home réseau : beaucoup plus rapide.
+-- Dossier privé (700) : personne d'autre ne peut les lire.
+local swap = "/tmp/" .. (vim.env.USER or "moi") .. "-nvim-swap"
+if vim.fn.isdirectory(swap) == 0 then vim.fn.mkdir(swap, "p", tonumber("700", 8)) end
+vim.opt.directory = swap .. "//"
 pcall(require, "config.perso")
 LUA
   rm -f "$NVIM_CFG/lua/config/kit_raccourcis.lua"   # ancien remappage Ctrl-C/Ctrl-V (v2.2), retiré
@@ -535,6 +562,9 @@ nvim_mason() {   # installe les outils Mason et attend la fin (sinon nvim --head
 require("lazy").load({ plugins = { "mason.nvim" } })
 local reg = require("mason-registry")
 pcall(reg.refresh)
+-- Laisser LazyVim lancer d'abord ses propres installations (ensure_installed) :
+-- sinon les deux demandent le même outil en même temps → « Package is already installing ».
+vim.wait(4000, function() return false end, 100)
 local noms = vim.split(vim.env.KIT_MASON or "", " ", { trimempty = true })
 for _, n in ipairs(noms) do
   local ok, p = pcall(reg.get_package, n)
@@ -553,7 +583,9 @@ LUA
   [ -f /etc/ssl/certs/ca-certificates.crt ] && export NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
   KIT_MASON="$outils" npm_config_cache="$HOME/.npm" timeout 1200 "$BIN/nvim" --headless "+luafile $WORK/kit-mason.lua" +qa
   noter "$HOME/.npm"
-  [ -e "$HOME/.local/share/nvim/mason/bin/clangd" ]
+  local o manque=""
+  for o in clangd codelldb shellcheck shfmt; do [ -e "$HOME/.local/share/nvim/mason/bin/$o" ] || manque="$manque $o"; done
+  [ -z "$manque" ] || { RAISON="outils Mason manquants :$manque (relancer le script)"; return 1; }
 }
 nvim_parseurs() {  # compile les parseurs de coloration (C, bash…) et attend la fin
   cat >"$WORK/kit-ts.lua" <<'LUA'
@@ -664,7 +696,7 @@ source "$ZSH/oh-my-zsh.sh"
 # ---- Alias ----
 alias vim=nvim vi=nvim
 (( $+commands[zoxide] ))    && alias j=z           # habitude autojump
-(( $+commands[eza] ))       && alias lt='eza --tree --level=2 --icons'
+(( $+commands[eza] ))       && alias lt='eza --tree --level=2 --icons=auto'
 (( $+commands[lazygit] ))   && alias lg=lazygit
 (( $+commands[gedit] )) || { (( $+commands[xed] )) && alias gedit=xed; }   # Mint : xed = gedit
 (( $+commands[trash-put] )) && alias tp=trash-put

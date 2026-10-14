@@ -1,0 +1,7 @@
+rm -f ~/.config/nvim/lua/plugins/terminal-droite.lua
+cat > ~/.config/nvim/lua/plugins/terminal-right.lua <<'EOF'
+-- Neovim terminal (Ctrl-/) on the right, 40% of the width
+return {
+  { "folke/snacks.nvim", opts = { terminal = { win = { position = "right", width = 0.4 } } } },
+}
+EOF

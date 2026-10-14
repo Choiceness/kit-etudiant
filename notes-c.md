@@ -80,7 +80,7 @@ Avec `crun prog.c 5 7` :
 ### Les limites
 
 1. **Un seul .c à la fois.** Pour plusieurs fichiers : gcc à la main ou `make` (voir partie 3).
-2. **À la maison, `CFLAGS` est exporté** : `make` et `./configure` le reprennent tout seuls, donc le Makefile d'un prof qui ne définit pas `CFLAGS` compile avec mes options. À la fac la variable s'appelle `CFLAGS_KIT` et n'est pas exportée, pas ce souci.
+2. **À la maison, `CFLAGS` est exporté** : `make` et `./configure` le reprennent tout seuls, donc le Makefile d'un prof qui ne définit pas `CFLAGS` compile avec mes options. À la fac la variable s'appelle `CFLAGS_DEV` et n'est pas exportée, pas ce souci.
 3. **Le programme prend le nom du fichier** et écrase un fichier qui s'appellerait déjà comme ça.
 
 ⚠️ **En exam** : si le sujet impose une commande (genre `gcc -std=c99 -Wall -Werror`), faire la vérif finale avec **cette** commande. Ses options peuvent refuser un truc que crun accepte (ex : `strdup` sans `-D_DEFAULT_SOURCE`).
@@ -171,7 +171,7 @@ Si le .h est dans `include/` et le .c dans `src/`, créer `compile_flags.txt` à
 -Iinclude
 ```
 
-Et ajouter `-Iinclude` à gcc. (Les projets `kit-projet` l'ont déjà, avec `-Isrc`.)
+Et ajouter `-Iinclude` à gcc. (Les projets `cnew` l'ont déjà, avec `-Isrc`.)
 
 **3. Neovim ne dit rien mais la compilation échoue**
 Message de gcc : `undefined reference to 'somme'`.
@@ -181,7 +181,7 @@ Le .h ne fait que **déclarer** (« somme existe »), le code est dans `outil.c`
 gcc -std=c11 -Wall -Wextra -g main.c outil.c -o prog && ./prog
 ```
 
-ou `make run` dans un projet `kit-projet` (compile tous les .c de `src/`).
+ou `make run` dans un projet `cnew` (compile tous les .c de `src/`).
 
 **Plus rare** : deux .h avec le même `#ifndef OUTIL_H` (souvent après un copier-coller). Le 2e est ignoré en silence. Chaque .h doit avoir son propre nom de garde.
 
@@ -327,15 +327,15 @@ Deux standards différents :
 Par défaut **Ctrl-/** ouvre le terminal en bas. Pour l'avoir à droite (à faire une fois à la fac et une fois à la maison) :
 
 ```sh
-cat > ~/.config/nvim/lua/plugins/terminal-droite.lua <<'EOF'
--- Terminal de Neovim (Ctrl-/) à droite du code, sur 40 % de la largeur
+cat > ~/.config/nvim/lua/plugins/terminal-right.lua <<'EOF'
+-- Neovim terminal (Ctrl-/) on the right, 40% of the width
 return {
   { "folke/snacks.nvim", opts = { terminal = { win = { position = "right", width = 0.4 } } } },
 }
 EOF
 ```
 
-Le kit ne touche jamais ce fichier. Pour revenir en bas : `rm ~/.config/nvim/lua/plugins/terminal-droite.lua`. Trop étroit ? Mettre `0.5` au lieu de `0.4`.
+Le script d'installation ne touche jamais ce fichier. Pour revenir en bas : `rm ~/.config/nvim/lua/plugins/terminal-right.lua`. Trop étroit ? Mettre `0.5` au lieu de `0.4`.
 
 | Touche | Effet |
 |---|---|
@@ -397,7 +397,7 @@ Points faibles : changer de fenêtre = souris ou **Alt-Tab** (un seul Alt-Tab = 
 
 ## 9. Hors connexion
 
-Tout marche sans internet une fois installé, parce que tout tourne en local : shellcheck, clangd, bashls, débogueur, coloration, `crun`, `gdb` + `dash`, `valgrind`, `make test`, `man`, `tldr`, `doc-c`.
+Tout marche sans internet une fois installé, parce que tout tourne en local : shellcheck, clangd, bashls, débogueur, coloration, `crun`, `gdb` + `dash`, `valgrind`, `make test`, `man`, `tldr`, `cdoc`.
 
 Internet sert seulement à installer ou mettre à jour : `:Lazy update`, `:Mason`, nouveau langage, `tldr --update`, `google mot`. Si un outil manque, une notification rouge peut apparaître au démarrage, sans gravité.
 
@@ -407,7 +407,7 @@ Test à la maison : couper le Wi-Fi, `echo $1` dans un `.sh` (shellcheck doit so
 
 ## 10. À vérifier avant l'exam
 
-- [ ] `man 3 printf` à la fac. Si « Aucune entrée » : il manque les pages man du C (Espace s M ne trouvera rien, reste `doc-c`).
+- [ ] `man 3 printf` à la fac. Si « Aucune entrée » : il manque les pages man du C (Espace s M ne trouvera rien, reste `cdoc`).
 - [ ] L'exam se passe sur **mon compte habituel** ? (sinon ma config n'y sera pas)
 - [ ] La **commande de compilation** demandée dans le sujet.
 - [ ] Choisir ma disposition (A, B ou C).

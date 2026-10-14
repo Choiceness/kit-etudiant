@@ -1,11 +1,11 @@
-# kit-etudiant 2.5
+# ExportedHomeConfig 3.0
 
 Ton environnement **C et Bash** de la maison, sur un Linux Mint de fac, **sans droits administrateur**.
 
 zsh + oh-my-zsh + ton prompt powerlevel10k, Neovim + LazyVim (erreurs en direct, complétion, débogueur), GNOME Terminal aux couleurs de Konsole, historique du presse-papier, et tous les outils pour compiler, déboguer et tester. Aucun `sudo`, aucun fichier système modifié.
 
 ```bash
-bash kit-etudiant.sh --maison ~/kit-maison.tar.gz
+bash exported-home-config.sh --home ~/home-config.tar.gz
 ```
 
 ---
@@ -36,7 +36,7 @@ bash kit-etudiant.sh --maison ~/kit-maison.tar.gz
 |---|---|
 | **Sans root** | Tout va dans `$HOME`. Le script refuse de tourner en root et ne peut pas appeler `sudo`. |
 | **Relançable** | Ce qui est déjà installé est sauté. Relancer ne refait que ce qui a échoué. |
-| **Réversible** | `--desinstaller` retire tout et remet tes fichiers de config d'origine. |
+| **Réversible** | `--uninstall` retire tout et remet tes fichiers de config d'origine. |
 | **Stable** | Pas de mise à jour automatique d'oh-my-zsh, outils Mason figés. Rien ne change la veille d'un examen. |
 | **Réseau partagé** | Aucun appel à l'API GitHub : pas de blocage quand toute une salle installe en même temps. |
 | **Vérifié** | Après installation, chaque règle de coloration de Neovim est testée ; un problème apparaît dans le bilan, pas dans ton éditeur. |
@@ -48,31 +48,41 @@ bash kit-etudiant.sh --maison ~/kit-maison.tar.gz
 **1. Sur ton PC maison** (lecture seule, rien n'est modifié) :
 
 ```bash
-bash export-maison.sh        # crée ~/kit-maison.tar.gz : prompt, plugins, police, couleurs Konsole
+bash export-home-config.sh   # crée ~/home-config.tar.gz : prompt, plugins, police, couleurs Konsole
 ```
 
-**2. Sur le PC de la fac**, copier `kit-maison.tar.gz` (clé USB, mail, git…), vérifier la place (`quota -s`, environ **2,5 Go**), puis :
+**2. Sur le PC de la fac**, copier `home-config.tar.gz` (clé USB, mail, git…), vérifier la place (`quota -s`, environ **2,5 Go**), puis :
 
 ```bash
-git clone https://github.com/TON_PSEUDO/kit-etudiant.git
-cd kit-etudiant
-bash kit-etudiant.sh --maison ~/kit-maison.tar.gz
+git clone https://github.com/TON_PSEUDO/exported-home-config.git
+cd exported-home-config
+bash exported-home-config.sh --home ~/home-config.tar.gz
 ```
 
-Compter 5 à 10 minutes. À la fin, un **bilan** liste ce qui a réussi, ce qui a échoué et ce qu'il reste à faire.
+Compter 5 à 10 minutes. À la fin, un **résumé** (SUMMARY) liste ce qui a réussi, ce qui a échoué et ce qu'il reste à faire.
 
-**3. Fermer tous les terminaux** et en rouvrir un (profil « Maison », zsh). **Fermer puis rouvrir la session Mint** pour Caps Lock → Échap et CopyQ.
+**3. Fermer tous les terminaux** et en rouvrir un (profil « Home », zsh). **Fermer puis rouvrir la session Mint** pour Caps Lock → Échap et CopyQ.
 
-Sans `--maison`, le kit utilise ta liste de plugins connue, MesloLGS NF 15, les couleurs Breeze, et le prompt style « rainbow » (`p10k configure` pour le refaire).
+Sans `--home`, le script utilise ta liste de plugins connue, MesloLGS NF 15, les couleurs Breeze, et le prompt style « rainbow » (`p10k configure` pour le refaire).
 
 ### Venir de la version 1
 
 ```bash
-bash kit-etudiant.sh --desinstaller --tout
-bash kit-etudiant.sh --maison ~/kit-maison.tar.gz
+bash exported-home-config.sh --uninstall --all
+bash exported-home-config.sh --home ~/home-config.tar.gz
 ```
 
 Si tu oublies, le script détecte la version 1 et s'arrête en affichant la commande à lancer.
+
+### Venir de kit-etudiant 2.x
+
+Relancer simplement le nouveau script. Il renomme l'installation existante (dossiers, marqueurs dans tes fichiers, commandes `kit-projet` → `cnew`, `kit-aide` → `memo`, `doc-c` → `cdoc`) sans rien retélécharger, puis réécrit les fichiers de config :
+
+```bash
+bash exported-home-config.sh --home ~/kit-maison.tar.gz   # ton ancienne archive marche encore
+```
+
+Les anciennes options (`--maison`, `--seulement`, `--desinstaller`…) marchent encore.
 
 ---
 
@@ -80,14 +90,14 @@ Si tu oublies, le script détecte la version 1 et s'arrête en affichant la comm
 
 | Option | Effet |
 |---|---|
-| `--maison ARCHIVE` | reprendre ta config maison (archive de `export-maison.sh`) |
-| `--p10k FICHIER` | reprendre seulement ton prompt powerlevel10k |
-| `--maj` | tout mettre à jour (plugins, outils, registre Mason) |
-| `--sans-conda` | sauter micromamba (valgrind, gdb, cppcheck, bear, tmux, Check, Node, xclip) |
-| `--sans-terminal` | ne pas créer le profil GNOME Terminal « Maison » |
-| `--seulement A,B` | ne lancer que ces étapes (`--liste` pour les voir) |
-| `--desinstaller` | tout retirer, en gardant tes fichiers perso |
-| `--desinstaller --tout` | tout retirer, y compris tes fichiers perso |
+| `--home ARCHIVE` | reprendre ta config maison (archive de `export-home-config.sh`) |
+| `--p10k FILE` | reprendre seulement ton prompt powerlevel10k |
+| `--update` | tout mettre à jour (plugins, outils, registre Mason) |
+| `--no-conda` | sauter micromamba (valgrind, gdb, cppcheck, bear, tmux, Check, Node, xclip) |
+| `--no-terminal` | ne pas créer le profil GNOME Terminal « Home » |
+| `--only A,B` | ne lancer que ces étapes (`--list` pour les voir) |
+| `--uninstall` | tout retirer, en gardant tes fichiers perso |
+| `--uninstall --all` | tout retirer, y compris tes fichiers perso |
 
 ---
 
@@ -99,7 +109,7 @@ Si tu oublies, le script détecte la version 1 et s'arrête en affichant la comm
 |---|---|
 | zsh (zsh-bin) | shell, version statique installable sans root |
 | oh-my-zsh + **ton `.p10k.zsh`** | ton prompt : dossier, git, statut, durée, heure |
-| Profil GNOME Terminal « Maison » | couleurs Breeze de Konsole, MesloLGS NF 15, marge 5 px, ouvre zsh |
+| Profil GNOME Terminal « Home » | couleurs Breeze de Konsole, MesloLGS NF 15, marge 5 px, ouvre zsh |
 | Caps Lock → Échap | confort dans Neovim (Shift + Caps garde les majuscules) |
 | fzf | recherche floue (Ctrl-R, Ctrl-T, Alt-C, `**` + Tab) |
 
@@ -142,11 +152,11 @@ Si tu oublies, le script détecte la version 1 et s'arrête en affichant la comm
 | Outil | Rôle |
 |---|---|
 | `crun`, `csan`, `cmem`, `cdebug` | tes commandes maison, corrigées avec `-D_DEFAULT_SOURCE` |
-| `kit-projet` | projet C prêt : Makefile, tests Check, clang-format, clang-tidy |
+| `cnew` | projet C prêt : Makefile, tests Check, clang-format, clang-tidy |
 | gdb + gdb-dashboard, valgrind | débogage, fuites mémoire |
 | cppcheck, clang-tidy, clang-format, bear | analyse statique, formatage, `compile_commands.json` |
 | shellcheck, shfmt, bats | scripts : erreurs, formatage, tests |
-| `doc-c`, pages man | documentation C, aussi hors ligne |
+| `cdoc`, pages man | documentation C, aussi hors ligne |
 
 ### Ligne de commande et bureau
 
@@ -170,7 +180,7 @@ Si tu oublies, le script détecte la version 1 et s'arrête en affichant la comm
 
 | # | Réflexe | Pourquoi |
 |---|---|---|
-| 1 | `kit-aide` | tous les raccourcis sur une page |
+| 1 | `memo` | tous les raccourcis sur une page |
 | 2 | Espace (attendre) dans Neovim | menu de tous les raccourcis, cherchable |
 | 3 | `csan prog.c` avant de rendre un TP | AddressSanitizer trouve les erreurs mémoire invisibles |
 | 4 | `]d` puis Espace c a | aller à l'erreur suivante, appliquer la correction proposée |
@@ -217,7 +227,7 @@ Si tu oublies, le script détecte la version 1 et s'arrête en affichant la comm
 | Ctrl-O | copier la ligne en cours (pour la coller ailleurs) |
 | `ls G txt` | alias global : `G` = `| grep`, `H` = `| head`, `T` = `| tail`, `L` = `| less` |
 | `google erreur gcc` | recherche web depuis le terminal |
-| `zshrc` | ouvrir ton `.zshrc` (préférer `~/.config/kit-etudiant/perso.zsh`) |
+| `zshrc` | ouvrir ton `.zshrc` (préférer `~/.config/exported-home-config/perso.zsh`) |
 
 ### Git en 2 lettres
 
@@ -313,7 +323,7 @@ Attention : `rm`, `cp` et `mv` demandent confirmation (common-aliases). Réponds
 ### Un projet
 
 ```bash
-kit-projet tp1 && cd tp1
+cnew tp1 && cd tp1
 ```
 
 | Commande | Effet |
@@ -367,7 +377,7 @@ Ces fichiers sont à toi. Le script ne les écrase jamais.
 
 | Fichier | Pour |
 |---|---|
-| `~/.config/kit-etudiant/perso.zsh` | tes alias et réglages zsh |
+| `~/.config/exported-home-config/perso.zsh` | tes alias et réglages zsh |
 | `~/.config/nvim/lua/config/perso.lua` | tes options Neovim |
 | `~/.config/nvim/lua/config/keymaps.lua` | tes raccourcis Neovim |
 | `~/.config/nvim/lua/plugins/perso.lua` | tes plugins Neovim |
@@ -386,12 +396,12 @@ eval "$(thefuck --alias oups)"     # « oups » au lieu de « fuck »
 ## Mettre à jour, désinstaller
 
 ```bash
-bash kit-etudiant.sh --maj --maison ~/kit-maison.tar.gz   # tout mettre à jour
-bash kit-etudiant.sh --desinstaller                         # tout retirer, garder le perso
-bash kit-etudiant.sh --desinstaller --tout                  # tout retirer
+bash exported-home-config.sh --update --home ~/home-config.tar.gz   # tout mettre à jour
+bash exported-home-config.sh --uninstall          # tout retirer, garder le perso
+bash exported-home-config.sh --uninstall --all                  # tout retirer
 ```
 
-La désinstallation retire le profil « Maison » et remet ton terminal par défaut, restaure tes anciens `.zshrc` et `.tmux.conf`, met ta config Neovim de côté (`~/.config/nvim.kit-sauvegarde-*`) au lieu de la supprimer, et n'annule que les réglages git qu'elle a ajoutés.
+La désinstallation retire le profil « Home » et remet ton terminal par défaut, restaure tes anciens `.zshrc` et `.tmux.conf`, met ta config Neovim de côté (`~/.config/nvim.saved-*`) au lieu de la supprimer, et n'annule que les réglages git qu'elle a ajoutés.
 
 **Ne pas mettre à jour juste avant un examen.**
 
@@ -402,14 +412,14 @@ La désinstallation retire le profil « Maison » et remet ton terminal par déf
 | Problème | Solution |
 |---|---|
 | Le terminal ne s'ouvre pas dans zsh | fermer **tous** les terminaux, en rouvrir un ; sinon taper `zsh` |
-| Lettres très espacées, carrés à la place des icônes | profil « Maison » → police **MesloLGS NF** |
+| Lettres très espacées, carrés à la place des icônes | profil « Home » → police **MesloLGS NF** |
 | Une ligne ✘ dans le bilan | lire le journal indiqué, puis relancer le script |
 | Bulles rouges « mason… failed to install » | Node absent : vérifier l'étape conda du bilan |
-| Erreurs rouges « query.lua … Invalid node type » | `bash kit-etudiant.sh --seulement neovim --maj` |
+| Erreurs rouges « query.lua … Invalid node type » | `bash exported-home-config.sh --only neovim --update` |
 | Neovim : `y` ne va pas dans le presse-papier | `command -v xclip` ; dans Neovim `:checkhealth vim.provider` |
 | CopyQ refusé (libOpenGL ou glibc) | `flatpak install --user flathub com.github.hluk.copyq` si flatpak est présent |
-| Quota plein | `gdu ~`, puis relancer avec `--sans-conda` si besoin |
-| Revenir à l'état d'origine | `bash kit-etudiant.sh --desinstaller --tout` |
+| Quota plein | `gdu ~`, puis relancer avec `--no-conda` si besoin |
+| Revenir à l'état d'origine | `bash exported-home-config.sh --uninstall --all` |
 
 ---
 
@@ -417,10 +427,10 @@ La désinstallation retire le profil « Maison » et remet ton terminal par déf
 
 | Script | Où | Rôle |
 |---|---|---|
-| `export-maison.sh` | PC maison | lecture seule : rassemble prompt, plugins, police, couleurs Konsole et config Neovim dans `~/kit-maison.tar.gz` |
-| `reparer-maison.sh` | PC maison | répare ce qui était cassé chez toi (CFLAGS, thefuck, git, outils LazyVim, Node, treesitter, ligne de commande, ménage), puis ajoute ce que la fac a en plus, seulement s'il manque : shellcheck, shfmt, bats, tldr, eza, delta, watchexec, trash-cli, Check, clang-tidy, gdb-dashboard, `kit-projet`, `kit-aide`, `doc-c`, alias `lt` `lg` `tp` `mkcd`, `git lg`. Chaque étape demande ton accord ; `--voir` pour regarder sans rien changer. Garder `kit-etudiant.sh` dans le même dossier |
+| `export-home-config.sh` | PC maison | lecture seule : rassemble prompt, plugins, police, couleurs Konsole et config Neovim dans `~/home-config.tar.gz` |
+| `fix-home-config.sh` | PC maison | répare ce qui était cassé chez toi (CFLAGS, thefuck, git, outils LazyVim, Node, treesitter, ligne de commande, ménage), puis ajoute ce que la fac a en plus, seulement s'il manque : shellcheck, shfmt, bats, tldr, eza, delta, watchexec, trash-cli, Check, clang-tidy, gdb-dashboard, `cnew`, `memo`, `cdoc`, alias `lt` `lg` `tp` `mkcd`, `git lg`. Chaque étape demande ton accord ; `--dry-run` pour regarder sans rien changer. Garder `exported-home-config.sh` dans le même dossier |
 
-Si tu changes de thème ou de plugins à la maison : relancer `export-maison.sh`, puis `--maison` à la fac.
+Si tu changes de thème ou de plugins à la maison : relancer `export-home-config.sh`, puis `--home` à la fac.
 
 ---
 
@@ -428,13 +438,14 @@ Si tu changes de thème ou de plugins à la maison : relancer `export-maison.sh`
 
 | Version | Changements |
 |---|---|
+| 3.0 | nouveau nom ExportedHomeConfig (reprend une installation kit-etudiant sans tout réinstaller) ; commandes `cnew`, `memo`, `cdoc` ; options en anglais (les anciennes marchent encore) ; commentaires et messages en anglais |
 | 2.5.4 | `lt dossier` réparé (eza prenait le dossier pour une option de `--icons`) |
 | 2.5 | serveur bash seulement si Node est disponible ; vérification des règles de coloration après installation |
 | 2.4 | ligne de commande et messages de Neovim en bas de l'écran (noice ne les gère plus) |
 | 2.3 | yanky (historique des copies dans Neovim), CopyQ (historique global, Super+V) |
 | 2.2 | xclip, `gedit` → xed |
-| 2.1 | `--maison` : prompt, 17 plugins, police, couleurs et marge reprises de la maison ; thefuck |
-| 2.0 | zsh + oh-my-zsh + powerlevel10k, Neovim + LazyVim, profil GNOME Terminal « Maison » |
+| 2.1 | `--home` (ex `--maison`) : prompt, 17 plugins, police, couleurs et marge reprises de la maison ; thefuck |
+| 2.0 | zsh + oh-my-zsh + powerlevel10k, Neovim + LazyVim, profil GNOME Terminal « Home » |
 | 1.x | bash + ble.sh + starship, Vim + ALE (remplacée) |
 
 ---
@@ -453,4 +464,4 @@ Testé le 6 octobre 2026 sur Ubuntu 24.04 avec un **utilisateur sans aucun droit
 | CopyQ 16 | démarre quand `libOpenGL.so.0` est présente (la 17 exige une glibc trop récente) |
 | Désinstallation v1 / v2 | 1,7 Go → 188 Ko / 12 Mo, fichiers perso conservés |
 
-**Pas encore testé sur un vrai poste** : micromamba (valgrind, gdb, Node, xclip), l'affichage réel du profil « Maison », CopyQ avec un vrai écran.
+**Pas encore testé sur un vrai poste** : micromamba (valgrind, gdb, Node, xclip), l'affichage réel du profil « Home », CopyQ avec un vrai écran.
